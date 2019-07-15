@@ -429,6 +429,7 @@ public class ACER_Benchmark extends Application {
         bp_benchmark = new BorderPane();
         bp_benchmark.setLeft(vb_benchmarks);
         bp_benchmark.setCenter(vb_center_benchmarks);
+        bp_benchmark.setRight(new Text(" "));   // temp trick for padding on the right
         bp_benchmark.setMargin(vb_title, new Insets(16, 0, 16, 0));
         bp_benchmark.setStyle("-fx-background-color: #F8F8F8;");
 
