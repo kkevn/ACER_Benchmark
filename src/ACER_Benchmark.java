@@ -235,7 +235,7 @@ public class ACER_Benchmark extends Application {
         vb_connect.setMargin(vb_title, new Insets(0, 0, 16, 0));
         vb_connect.setMargin(vb_inputs, new Insets(0, 0, 16, 0));
         vb_connect.setMargin(hb_connect, new Insets(0, 0, 16, 0));
-        vb_connect.setMargin(hb_footer, new Insets(0, 0, -32, 0));
+        vb_connect.setMargin(hb_footer, new Insets(0, 0, -50, 0));
         vb_connect.setStyle("-fx-background-color: #F8F8F8;");
 
         // set the layout to the scene as 600px by 400px
