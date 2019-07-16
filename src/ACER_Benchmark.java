@@ -96,7 +96,7 @@ public class ACER_Benchmark extends Application {
     private Text t_benchmarks, t_time_c, t_time_cuda;
     private static TextArea ta_log;
     private ToggleGroup tg_benchmarks;
-    private RadioButton rb_matrix, rb_test2, rb_test3, rb_test4;
+    private RadioButton rb_matrix, rb_saxpy, rb_vector, rb_test4;
     private ComboBox cb_size, cb_run_count;
     private Button b_run_c, b_run_cuda, b_results, b_logout;
     private HBox hb_title2, hb_benchmarks, hb_c_cuda, hb_results_logout;
@@ -285,31 +285,31 @@ public class ACER_Benchmark extends Application {
         
         // benchmark button components
         tg_benchmarks = new ToggleGroup();
-        rb_matrix = new RadioButton("Matrix Multiplication");
+        rb_matrix = new RadioButton("Matrix Multiplication\t");
         rb_matrix.setToggleGroup(tg_benchmarks);
         rb_matrix.setOnAction(e -> benchmarkButtonListener());
-        rb_test2 = new RadioButton("#test_2\t\t\t");
-        rb_test2.setToggleGroup(tg_benchmarks);
-        rb_test2.setOnAction(e -> benchmarkButtonListener());
-        rb_test3 = new RadioButton("#test_3\t\t\t");
-        rb_test3.setToggleGroup(tg_benchmarks);
-        rb_test3.setOnAction(e -> benchmarkButtonListener());
-        rb_test4 = new RadioButton("#test_4\t\t\t");
+        rb_saxpy = new RadioButton("Single-Precision AX+Y\t");
+        rb_saxpy.setToggleGroup(tg_benchmarks);
+        rb_saxpy.setOnAction(e -> benchmarkButtonListener());
+        rb_vector = new RadioButton("Vector Addition\t\t");
+        rb_vector.setToggleGroup(tg_benchmarks);
+        rb_vector.setOnAction(e -> benchmarkButtonListener());
+        rb_test4 = new RadioButton("#test_4\t\t\t\t");
         rb_test4.setToggleGroup(tg_benchmarks);
         rb_test4.setOnAction(e -> benchmarkButtonListener());
         tg_benchmarks.selectToggle(rb_matrix);
-        setRadioButtonStyle(rb_matrix, rb_test2, rb_test3, rb_test4);
+        setRadioButtonStyle(rb_matrix, rb_saxpy, rb_vector, rb_test4);
         
         // layout for benchmark list
         vb_benchmarks = new VBox();
         vb_benchmarks.getChildren().addAll(hb_benchmarks,
-                rb_matrix, rb_test2, rb_test3, rb_test4);
+                rb_matrix, rb_saxpy, rb_vector, rb_test4);
         //vb_benchmarks.setMaxWidth(450);
         vb_benchmarks.setAlignment(Pos.TOP_LEFT);
         vb_benchmarks.setMargin(hb_benchmarks, new Insets(16));
         vb_benchmarks.setMargin(rb_matrix, new Insets(16));
-        vb_benchmarks.setMargin(rb_test2, new Insets(16));
-        vb_benchmarks.setMargin(rb_test3, new Insets(16));
+        vb_benchmarks.setMargin(rb_saxpy, new Insets(16));
+        vb_benchmarks.setMargin(rb_vector, new Insets(16));
         vb_benchmarks.setMargin(rb_test4, new Insets(16));
         
         // text area log field
@@ -779,11 +779,11 @@ public class ACER_Benchmark extends Application {
             case "Matrix Multiplication":
                 benchmarkID = "matrix_mult";
                 break;
-            case "#test_2":
-                benchmarkID = "t2";
+            case "Single-Precision AX+Y":
+                benchmarkID = "saxpy";
                 break;
-            case "#test_3":
-                benchmarkID = "t3";
+            case "Vector Addition":
+                benchmarkID = "vector_add";
                 break;
             case "#test_4":
                 benchmarkID = "t4";
