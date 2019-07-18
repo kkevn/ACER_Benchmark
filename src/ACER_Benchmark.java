@@ -347,7 +347,7 @@ public class ACER_Benchmark extends Application {
         b_run_c.setOnMouseEntered(e -> setButtonHoverStyle(b_run_c, "#005f7c"));
         b_run_c.setOnMousePressed(e -> setButtonPressedStyle(b_run_c, "#005f7c"));
         b_run_c.setOnMouseExited(e -> resetButtonStyle(b_run_c, "#007fa5"));
-        b_run_c.setOnAction(e -> runBenchmark("c/c++"));
+        b_run_c.setOnAction(e -> runBenchmark("c_cpp"));
         
         // cuda run button
         b_run_cuda = new Button("Run Cuda");
@@ -797,9 +797,9 @@ public class ACER_Benchmark extends Application {
     private void runBenchmark(String type) {
         
         // if C/C++ benchmark button was pressed
-        if (type.toLowerCase().contains("c/c++")) {
+        if (type.toLowerCase().contains("c_cpp")) {
             try {
-                t_time_c.setText(remote_shell.runBenchmark("c/c++", getBenchmarkID(), 500) + "ms");
+                t_time_c.setText(remote_shell.runBenchmark("c_cpp", getBenchmarkID(), 500) + "ms");
             } catch (JSchException ex) {
                 Logger.getLogger(ACER_Benchmark.class.getName()).log(Level.SEVERE, null, ex);
                 System.out.println("> Error @ runBenchmark()-1");
@@ -830,8 +830,8 @@ public class ACER_Benchmark extends Application {
         String file = benchmark;
         
         switch (type) {
-            case "c/c++":
-                file += "_c.txt";
+            case "c_cpp":
+                file += "_c_cpp.txt";
                 break;
             case "cuda":
                 file += "_cuda.txt";
@@ -860,7 +860,7 @@ public class ACER_Benchmark extends Application {
         xyc_s_cuda.getData().clear();
         
         // get correct path to benchmark's c/c++ results file
-        Path path = Paths.get("src/results/" + getBenchmarkID() + "_c.txt");
+        Path path = Paths.get("src/results/" + getBenchmarkID() + "_c_cpp.txt");
         
         try {
             List<String> list = Files.readAllLines(path);
