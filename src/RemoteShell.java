@@ -53,15 +53,20 @@ public class RemoteShell {
     }
     
     /* runs the benchmark and returns the time result while logging process */
-    public double runBenchmark(String type, String benchmark) throws JSchException, IOException {
+    public String runBenchmark(String type, String benchmark, int size) throws JSchException, IOException {
+        
+        double time;
         String result = "";
         
-        String command = "";
+        String command = "cd " + benchmark + "; time ./" + type;
         
         // set command as C/C++ benchmark
-        if (type.equals("c/c++")) {
+        if (type.equals("c_cpp")) {
             command = "cd acer_test; time ./a.out";
         }
+        
+        // saxpy
+        // time for i in {1..1000}; do clear; ./a.out 1000000 1; done
         
         // set command as Cuda benchmark
         else {
@@ -76,11 +81,14 @@ public class RemoteShell {
         for (String line : outputs) {
             
             if ((line.toLowerCase()).contains("time")) {
-                result = line.substring(line.indexOf(':') + 2, line.length()).trim();
+                time = Double.parseDouble(line.substring(line.indexOf(':') + 2, line.length()).trim());
+                        
+                result = time + "," + size;
+                //ACER_Benchmark.writeResult(type, benchmark, result);
             }
         }
         
-        return Double.parseDouble(result);
+        return result;
     }
     
     
