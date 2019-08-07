@@ -1,0 +1,7 @@
+# Matrix Multiplication Cuda Benchmark Results
+# do not modify this file
+6.5,100
+2.12,250
+3.20,500
+1.22,750
+8.25,1000
