@@ -1,14 +1,16 @@
 package acer_benchmark;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
-import java.io.IOException;
 
 public class RemoteShell {
 
@@ -95,7 +97,7 @@ public class RemoteShell {
     public void runBenchmark(String type, String info[]) throws JSchException, IOException {
         
         // get directory of benchmark
-        String directory = "cd ~/acer_benchmarks/" + info[0] + "/; ";
+        String directory = "cd ~/benchmarks/" + info[0] + "/; ";
         
         // get benchmark executable + parameters and send output to text file
         String benchmark = "./" + type + ".out " + info[1] + info[2] + " > " + type + ".txt; ";
@@ -119,15 +121,12 @@ public class RemoteShell {
             command = load_gpu;
         }
         
-	// send start message to log
-        ACER_Benchmark.appendToLog(type, "> Initiating " + type.toUpperCase() + " " + info[0] + " benchmark...");
-        
 	// run the benchmark on the remote shell
-        runCommand(type, command);
+        runCommand(type, info[0], info[1].substring(info[1].indexOf(' ')).trim(), info[2].substring(info[2].indexOf(' ')).trim(), command);
     }
 
     /* runs the specified command on the session */
-    private void runCommand(String type, String command) throws JSchException, IOException {
+    private void runCommand(String type, String benchmark, String parameter, String threads, String command) throws JSchException, IOException {
         
         // open the exec channel
         channel = (ChannelExec) session.openChannel("exec");
@@ -159,8 +158,14 @@ public class RemoteShell {
 		// extract time value from current line
                 double time = Double.parseDouble(line.substring(line.indexOf('=') + 2, line.indexOf('s')).trim());
                 
+		// get current date in MM/dd/yyyy format
+		String date = new SimpleDateFormat("MM/dd/yyyy").format(new Date());
+
 		// store the result
-                //ACER_Benchmark.writeResult(type, benchmark, time + "," + parameter);
+		if (type.equals("cuda"))
+		    ACER_Benchmark.writeResult(type, benchmark, time + "," + parameter + "," + threads + ";" + date + "\n");
+		else
+		    ACER_Benchmark.writeResult(type, benchmark, time + "," + parameter + "," + date + "\n");
             }
         }
         

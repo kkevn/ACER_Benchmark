@@ -6,9 +6,9 @@
  ******************************************************************************
  * Description:
  *  Simple tool for observing performance differences in C/C++ vs. Cuda
- *  - Remote into Saber GPU cluster
+ *  - Remote into Saber/Extreme GPU cluster
  *  - Run both C/C++ and Cuda versions of any available benchmark (stored 
- *    and compiled on Saber)
+ *    and compiled on ACER HPC clusters for kkowal28 user)
  *  - View results in a meaningful way
  ******************************************************************************/
 
@@ -59,7 +59,6 @@ public class ACER_Benchmark extends Application {
     /* useful variables */
     private int default_port = 22;
     private int port = 22;
-    private String default_ip = "login-3.extreme.acer.uic.edu";
     private String login1 = "login-1.saber.acer.uic.edu";
     private String login2 = "login-2.saber.acer.uic.edu";
     private String login3 = "login-3.extreme.acer.uic.edu";
@@ -69,6 +68,8 @@ public class ACER_Benchmark extends Application {
     private boolean connected = false;
     private boolean inResultsView = false;
     private static boolean hasNotification = false;
+    private int runs_c = 0;
+    private int runs_cuda = 0;
     private RemoteShell remote_shell;
     private static PageDialog pd_message;
     private String[][] tips = {{"Log in","The first page is the log in."}, 
@@ -77,18 +78,18 @@ public class ACER_Benchmark extends Application {
 
     /* universal elements */
     private static Stage mainStage;
-    private Scene s_connect, s_benchmark, s_results;
+    private Scene s_connect, s_benchmark;
     private Font font, t_font, tf_font;
 
     /* login screen components */
     private ImageView iv_title;
-    private static BorderPane bp_login;
+    private BorderPane bp_login;
     private Text t_username, t_password, t_port, t_ip;
     private TextField tf_username, tf_port;
     private ComboBox<String> cb_ip;
     private PasswordField pf_password;
     private Button b_connect;
-    private Hyperlink hl_about, hl_contact, hl_help;
+    private Hyperlink hl_about, hl_contact, hl_duo, hl_help;
     private HBox hb_title, hb_ip_port, hb_connect, hb_footer;
     private VBox vb_title, vb_username, vb_password, vb_ip, vb_port, vb_inputs;
     private static VBox vb_connect;
@@ -103,9 +104,8 @@ public class ACER_Benchmark extends Application {
     private RadioButton rb_matrix, rb_saxpy, rb_vector, rb_test4;
     private ComboBox<Integer> cb_size, cb_runs, cb_threads;
     private Button b_run_c, b_run_cuda, b_clear, b_results, b_logout;
-    private HBox hb_title2, hb_benchmarks, hb_logs_param, hb_params, hb_c_cuda, hb_results_logout;
+    private HBox hb_title2, hb_benchmarks, hb_logs_param, hb_params;
     private VBox vb_title2, vb_benchmarks, vb_params, vb_size, vb_runs, vb_threads, vb_c, vb_cuda, vb_results_logout;
-    private static VBox vb_center_benchmarks;
     private static VBox vb_logs_param;
 
     /* results screen components */
@@ -138,8 +138,8 @@ public class ACER_Benchmark extends Application {
 	cb_ip = new ComboBox<String>();
 	cb_ip.getItems().addAll(login1, login2, login3);
 	cb_ip.setStyle("-fx-font: 14px \"Monospace\";");
-	cb_ip.getSelectionModel().selectFirst();
 	cb_ip.setEditable(true);
+	cb_ip.getSelectionModel().select(2);	
 	cb_ip.setMinWidth(354);
         vb_ip = new VBox();
         vb_ip.getChildren().addAll(t_ip, cb_ip);
@@ -219,7 +219,6 @@ public class ACER_Benchmark extends Application {
         hb_connect = new HBox();
         hb_connect.getChildren().addAll(b_connect);
         hb_connect.setAlignment(Pos.CENTER);
-        //hb_connect.setMargin(vb_ip, new Insets(0, 16, 0, 0));
         
         // about hyperlink
         hl_about = new Hyperlink("About");
@@ -230,6 +229,11 @@ public class ACER_Benchmark extends Application {
         hl_contact = new Hyperlink("Contact");
         hl_contact.setOnAction(e -> drawDialog("Contact"));
         hl_contact.setStyle("-fx-text-fill: #999999;-fx-border-color: transparent;");
+
+	// duo 2fa hyperlink
+        hl_duo = new Hyperlink("Duo 2FA");
+        hl_duo.setOnAction(e -> drawDialog("Duo 2FA"));
+        hl_duo.setStyle("-fx-text-fill: #999999;-fx-border-color: transparent;");
         
         // help hyperlink
         hl_help = new Hyperlink("Help");
@@ -238,7 +242,7 @@ public class ACER_Benchmark extends Application {
         
         // layout for footer
         hb_footer = new HBox();
-        hb_footer.getChildren().addAll(hl_about, hl_contact, hl_help);
+        hb_footer.getChildren().addAll(hl_about, hl_contact, hl_duo, hl_help);
         hb_footer.setAlignment(Pos.CENTER);
         hb_footer.setMinHeight(32);
         hb_footer.setStyle("-fx-background-color: #252525");
@@ -348,7 +352,6 @@ public class ACER_Benchmark extends Application {
         // layout for benchmark list
         vb_benchmarks = new VBox();
         vb_benchmarks.getChildren().addAll(hb_benchmarks, rb_matrix, rb_saxpy, rb_vector, rb_test4, vb_results_logout);
-        //vb_benchmarks.setMaxWidth(450);
         vb_benchmarks.setAlignment(Pos.TOP_LEFT);
         vb_benchmarks.setMargin(hb_benchmarks, new Insets(16));
         vb_benchmarks.setMargin(rb_matrix, new Insets(16));
@@ -358,7 +361,7 @@ public class ACER_Benchmark extends Application {
 	vb_benchmarks.setMargin(vb_results_logout, new Insets(320, 0, 8, 16));
         
         // text area log for c benchmarks
-        ta_log_c = new TextArea("Waiting for C/C++ benchmark to be run...\n\n");
+        ta_log_c = new TextArea("Waiting for C/C++ benchmark to be run...\n");
         ta_log_c.setFont(tf_font);
         ta_log_c.setMinHeight(384);
 	ta_log_c.setMinWidth(640);
@@ -369,7 +372,7 @@ public class ACER_Benchmark extends Application {
                       + "-fx-control-inner-background: #000000;");
 
 	// text area log for cuda benchmarks
-        ta_log_cuda = new TextArea("Waiting for CUDA benchmark to be run...\n\n");
+        ta_log_cuda = new TextArea("Waiting for CUDA benchmark to be run...\n");
         ta_log_cuda.setFont(tf_font);
         ta_log_cuda.setMinHeight(384);
 	ta_log_cuda.setMinWidth(640);
@@ -419,7 +422,7 @@ public class ACER_Benchmark extends Application {
 	vb_runs = new VBox();
         vb_runs.getChildren().addAll(t_runs, cb_runs);
         vb_runs.setAlignment(Pos.CENTER);
-	//cb_runs.setDisable(true);
+	cb_runs.setDisable(true);
         
         // size parameter options
 	t_threads = new Text("Threads per Block");
@@ -447,9 +450,9 @@ public class ACER_Benchmark extends Application {
         b_clear.setOnMouseExited(e -> resetButtonStyle(b_clear, "#007fa5"));
         b_clear.setOnAction(e -> {
 		ta_log_c.clear();
-		ta_log_c.appendText("Waiting for C/C++ benchmark to be run...\n\n");
+		ta_log_c.appendText("Waiting for C/C++ benchmark to be run...\n");
 		ta_log_cuda.clear();
-		ta_log_cuda.appendText("Waiting for CUDA benchmark to be run...\n\n");
+		ta_log_cuda.appendText("Waiting for CUDA benchmark to be run...\n");
 	});
 
 	// layout for parameters
@@ -491,44 +494,19 @@ public class ACER_Benchmark extends Application {
         // layout for c/c++ fields
         vb_c = new VBox();
         vb_c.getChildren().addAll(ta_log_c, b_run_c);
-        //vb_c.setMaxWidth(450);
         vb_c.setAlignment(Pos.CENTER);
-        //vb_c.setMargin(ta_log_c, new Insets(0, 72, 16, 0));
         vb_c.setMargin(b_run_c, new Insets(32, 0, 0, 0));
         
         // layout for cuda fields
         vb_cuda = new VBox();
         vb_cuda.getChildren().addAll(ta_log_cuda, b_run_cuda);
-        //vb_cuda.setMaxWidth(450);
         vb_cuda.setAlignment(Pos.CENTER);
-        //vb_cuda.setMargin(ta_log_cuda, new Insets(0, 0, 16, 72));
         vb_cuda.setMargin(b_run_cuda, new Insets(32, 0, 0, 0));
         
-        // layout for c vs cuda row
-        //hb_c_cuda = new HBox();
-        //hb_c_cuda.getChildren().addAll(b_run_c, b_run_cuda);
-        //hb_c_cuda.setAlignment(Pos.CENTER_LEFT);
-	//hb_c_cuda.setMargin(b_run_c, new Insets(0, 72, 0, 0));
-        //hb_c_cuda.setMargin(b_run_cuda, new Insets(0, 0, 0, 72));
-        
-        
-        
-        // benchmark controls layout in center
-        /*vb_center_benchmarks = new VBox();
-        vb_center_benchmarks.getChildren().addAll(hb_logs_param, hb_c_cuda, hb_results_logout);
-        vb_center_benchmarks.setAlignment(Pos.TOP_CENTER);
-        vb_cuda.setMargin(hb_logs_param, new Insets(16, 0, 16, 0));
-        vb_cuda.setMargin(hb_c_cuda, new Insets(0, 0, 32, 0));
-        vb_cuda.setMargin(hb_results_logout, new Insets(0, 0, 0, 0));
-        vb_center_benchmarks.setStyle("-fx-background-color: #F8F8F8;");
-        */
 	// layout for logs and parameter list
 	hb_logs_param = new HBox();
-	//hb_logs_param.setAlignment(Pos.TOP_CENTER);
 	hb_logs_param.getChildren().addAll(vb_c, vb_params, vb_cuda);
-	//hb_logs_param.setMargin(vb_c, new Insets(0, 0, 0, 0));
         hb_logs_param.setMargin(vb_params, new Insets(0, 64, 0, 64));
-        //hb_logs_param.setMargin(vb_cuda, new Insets(0, 0, 0, 0));
 	hb_logs_param.setAlignment(Pos.TOP_CENTER);
         hb_logs_param.setStyle("-fx-background-color: #F8F8F8;");
 
@@ -546,7 +524,7 @@ public class ACER_Benchmark extends Application {
         bp_benchmark.setStyle("-fx-background-color: #F8F8F8;");
 
         // set the layout to the scene as 800px by 600px
-        s_benchmark = new Scene(bp_benchmark, 1280, 720);
+        s_benchmark = new Scene(bp_benchmark, 1920, 1080);
 
         //return bp_benchmark;
     }
@@ -566,7 +544,6 @@ public class ACER_Benchmark extends Application {
         xyc_s_c = new XYChart.Series<>();
         xyc_s_c.setName("C/C++");
         
-        
         // cuda line graph
         xyc_s_cuda = new XYChart.Series<>();
         xyc_s_cuda.setName("Cuda");
@@ -579,11 +556,6 @@ public class ACER_Benchmark extends Application {
         // layout for results screen
         vb_results = new VBox();
 	vb_results.setAlignment(Pos.TOP_CENTER);
-        //vb_results.setMargin(lc_graph, new Insets(0, 0, 6, 0));
-	
-        
-        // set the layout to the scene as 800px by 600px
-        //s_results = new Scene(bp_layout, 800, 600);
 
         //return vb_results;
     }
@@ -594,8 +566,6 @@ public class ACER_Benchmark extends Application {
 
     public void start(Stage primaryStage) throws Exception {
 
-	System.out.println("==== LAUNCHING ====");
-
         // store refernce to primaryStage
         mainStage = primaryStage;
 
@@ -605,20 +575,15 @@ public class ACER_Benchmark extends Application {
         tf_font = Font.font("Monospace", FontPosture.REGULAR, 14);
 
         // load all three scenes and jump to connect scene
-        s_connect = new Scene(createConnectScene());
+        s_connect = new Scene(createConnectScene(), 1920, 1080);
         createBenchmarkScene();
         createResultsScene();
         mainStage.setTitle("ACER Benchmark - Connect to HPC Servers");
         mainStage.setScene(s_connect);
-        //mainStage.setScene(s_benchmark);
-        //mainStage.setScene(s_results);
         mainStage.setResizable(true);
         mainStage.setOnCloseRequest(e -> safetyExit());
         mainStage.show();
         pf_password.requestFocus();
-        
-        // notify user of 2FA
-        drawDialog("Duo 2FA");
     }
     
     /* called when application closed, ensures all connections terminated before exiting */
@@ -809,7 +774,6 @@ public class ACER_Benchmark extends Application {
         }
     }
 
-
     /* draws the notification box to the active window */
     private void drawDialog(String type) {
 
@@ -836,7 +800,7 @@ public class ACER_Benchmark extends Application {
 		
                 // help info
 		case "Duo 2FA":
-		    pd_message = new PageDialog(type, new String[]{"These servers use Duo Two Factor Authentication. By default your first Duo option has been selected. Please verify\nyour log-in. \n\n(Verification is often times a push notification or SMS.)"});
+		    pd_message = new PageDialog(type, new String[]{"These servers use Duo Two Factor Authentication. By default your first Duo option has been selected. Please verify\nyour log-in. (Verification is often times a push notification or SMS.)"});
 		    break;
             }
 
@@ -902,30 +866,21 @@ public class ACER_Benchmark extends Application {
     /* button listener for benchmark radio buttons */
     private void benchmarkButtonListener() {
         
-        // if at benchmark scene
-        if (!inResultsView) {
-
-	    String current_benchmark = getCurrentBenchmark();
-
-            appendToLog("c_cpp", "> Selected " + current_benchmark + " benchmark");
-	    appendToLog("cuda", "> Selected " + current_benchmark + " benchmark");
-
-	    // lock certain oarameters based on current benchmark selection
-	    //cb_size.setDisable(false);
-	    //cb_runs.setDisable(false);
-
-	    switch (current_benchmark) {
-		case "matrix_mult":
-		    //cb_runs.setDisable(true);
-		    break;
+        // lock certain parameters based on current benchmark selection
+	switch (getBenchmarkInfo()[0]) {
+            case "matrix_mult":
+                cb_size.setDisable(false);
+                cb_runs.setDisable(true);
+                break;
+            case "saxpy":
+                cb_size.setDisable(true);
+                cb_runs.setDisable(false);
+                break;
 	    }
-
-        }
         
-        // otherwise at graph scene
-        else {
+        // if at results page then draw graph
+        if (inResultsView)
             drawGraph();
-        }
     }
     
     /* fetches the currently selected benchmark */
@@ -969,9 +924,17 @@ public class ACER_Benchmark extends Application {
     /* runs the specified benchmark */
     private void runBenchmark(String type) {
         
-        // run benchmark given code type, benchmark name, and custom parameter
 	try {
+            
+            // send run message to log
+            if (type.equals("c_cpp"))
+                ACER_Benchmark.appendToLog(type, "\nRun " + ++runs_c + ")");
+            else
+                ACER_Benchmark.appendToLog(type, "\nRun " + ++runs_cuda + ")");
+            
+            // run benchmark given code type, benchmark name, and custom parameter
             remote_shell.runBenchmark(type, getBenchmarkInfo());
+            
         } catch (JSchException ex) {
             Logger.getLogger(ACER_Benchmark.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println("> JSch Error @ runBenchmark()");
@@ -1016,22 +979,56 @@ public class ACER_Benchmark extends Application {
         xyc_s_c.getData().clear();
         xyc_s_cuda.getData().clear();
         
+	// identify current benchmark
+	String curr_benchmark = getBenchmarkInfo()[0];
+	String y_tag = "";
+
+	// change y label based on current benchmark
+	switch (curr_benchmark) {
+	    case "matrix_mult":
+		y_size.setLabel("Size of N Elements");
+		y_tag = "Size = ";
+		break;
+	    case "saxpy":
+		y_size.setLabel("Number of Runs (N = 1,000,000)");
+		y_tag = "Runs = ";
+		break;
+	    case "vector_add":
+		y_size.setLabel("addition");
+		y_tag = "Size = ";
+		break;
+	    case "t4":
+		y_size.setLabel("test");
+		y_tag = "Test = ";
+		break;
+	}
+
         // get correct path to benchmark's c/c++ results file
-        Path path = Paths.get("src/main/resources/results/" + getBenchmarkInfo()[0] + "_c_cpp.txt");
+        Path path = Paths.get("src/main/resources/results/" + curr_benchmark + "_c_cpp.txt");
         
         try {
             List<String> list = Files.readAllLines(path);
             
             // for each line in file with data, add to graph
             list.forEach(line -> {
-                if (line.charAt(0) != '#') {
-                    
-                    // extract time and size/runs data point
-                    Double time = Double.parseDouble(line.substring(0, line.indexOf(',')));
-                    Integer parameter = Integer.parseInt(line.substring(line.indexOf(',') + 1));
-                    
+                if (line.charAt(0) != '#' && line.charAt(0) != '\n') {
+
+		    // container for data 
+		    String data[] = {"", "", ""};
+		
+		    // parse each field in the current line
+		    int i = 0;		
+		    for (char c : line.toCharArray()) {
+		    
+		        if (c != ',')
+		            data[i] += c;
+		        else {
+		            i++;
+		        }
+		    }
+
                     // add data to graph
-                    xyc_s_c.getData().add(new XYChart.Data(time, parameter, "08/07/2019"));
+                    xyc_s_c.getData().add(new XYChart.Data(Double.parseDouble(data[0]), Integer.parseInt(data[1]), data[2]));
                 }
             });
         }
@@ -1041,21 +1038,31 @@ public class ACER_Benchmark extends Application {
         
         
         // get correct path to benchmark's cuda results file
-        path = Paths.get("src/main/resources/results/" + getBenchmarkInfo()[0] + "_cuda.txt");
+        path = Paths.get("src/main/resources/results/" + curr_benchmark + "_cuda.txt");
         
         try {
             List<String> list = Files.readAllLines(path);
             
             // for each line in file with data, add to graph
             list.forEach(line -> {
-                if (line.charAt(0) != '#') {
-                    
-                    // extract time and size data point
-                    Double time = Double.parseDouble(line.substring(0, line.indexOf(',')));
-                    Integer parameter = Integer.parseInt(line.substring(line.indexOf(',') + 1));
-                    
+                if (line.charAt(0) != '#' && line.charAt(0) != '\n') {
+
+		    // container for data 
+		    String data[] = {"", "", ""};
+		
+		    // parse each field in the current line
+		    int i = 0;		
+		    for (char c : line.toCharArray()) {
+		    
+		        if (c != ',')
+		            data[i] += c;
+		        else {
+		            i++;
+		        }
+		    }
+
                     // add data to graph
-                    xyc_s_cuda.getData().add(new XYChart.Data(time, parameter, "08/07/2019"));
+                    xyc_s_cuda.getData().add(new XYChart.Data(Double.parseDouble(data[0]), Integer.parseInt(data[1]), data[2]));
                 }
             });
         }
@@ -1069,12 +1076,20 @@ public class ACER_Benchmark extends Application {
             // iterate over each data point in the current series
             for (final Data<Number, Number> data : series.getData()) {
                 
+		String extra = data.getExtraValue().toString();
+
+		// include threads/block if Cuda benchmark
+		if (series.getName().equals("Cuda"))
+		    extra = "\nThreads/Block = " + extra.substring(0, extra.indexOf(';')) + "\n\n" + extra.substring(extra.indexOf(';') + 1);
+		else
+		    extra = "\n\n" + extra;
+
                 // create a new tooltip for current data point
-                Tooltip t = new Tooltip("Time = \t" + data.getXValue().toString() + "\nSize = \t" + data.getYValue().toString() + "\n\nRan on " + data.getExtraValue());
+                Tooltip t = new Tooltip("Time = " + data.getXValue().toString() + "\n" + y_tag + "" + data.getYValue().toString() + extra);
                 Tooltip.install(data.getNode(), t);
                 
-                // add styling to current data point
-                data.getNode().setOnMouseEntered(e -> data.getNode().setStyle("-fx-background-color: white; -fx-background-radius: 8;"));
+                // add styling to data point on hover
+                data.getNode().setOnMouseEntered(e -> data.getNode().setStyle(series.getName().equals("C/C++") ? "-fx-background-radius: 8;-fx-background-color: red;" : "-fx-background-radius: 8;-fx-background-color: orange;"));
                 data.getNode().setOnMouseExited(e -> data.getNode().setStyle(null));
             }
         }
