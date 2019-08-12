@@ -160,64 +160,15 @@ public class RemoteShell {
                 
 		// get current date in MM/dd/yyyy format
 		String date = new SimpleDateFormat("MM/dd/yyyy").format(new Date());
-
+                
 		// store the result
 		if (type.equals("cuda"))
-		    ACER_Benchmark.writeResult(type, benchmark, time + "," + parameter + "," + threads + ";" + date + "\n");
+		    ACER_Benchmark.writeResult(type, benchmark, time + "," + parameter + "," + threads.substring(3, threads.length()) + ";" + date + "\n");
 		else
 		    ACER_Benchmark.writeResult(type, benchmark, time + "," + parameter + "," + date + "\n");
             }
         }
         
-        /*
-        channel.setCommand(command);
-        InputStream commandOutput = channel.getExtInputStream();
-        
-        StringBuilder outputBuffer = new StringBuilder();
-        StringBuilder errorBuffer = new StringBuilder();
-        
-        InputStream in = channel.getInputStream();
-        InputStream err = channel.getExtInputStream();
-        
-        channel.connect();
-        
-        byte[] tmp = new byte[1024];
-        
-        while (true) {
-            while (in.available() > 0) {
-                int i = in.read(tmp, 0, 1024);
-                if (i < 0)
-                    break;
-                outputBuffer.append(new String(tmp, 0, i));
-            }
-            while (err.available() > 0) {
-                int i = err.read(tmp, 0, 1024);
-                if (i < 0)
-                    break;
-                errorBuffer.append(new String(tmp, 0, i));
-            }
-            if (channel.isClosed()) {
-                if ((in.available() > 0) || (err.available() > 0))
-                    continue;
-                System.out.println("exit-status: " + channel.getExitStatus());
-                break;
-            }
-            try {
-                Thread.sleep(1000);
-                System.out.println("sleep 1000");
-            }
-            catch (Exception e) {
-                
-            }
-        }
-        
-        System.out.println("output:\n" + outputBuffer.toString());
-        System.out.println("error:\n" + errorBuffer.toString());
-        
-        ACER_Benchmark.appendToLog(type, outputBuffer.toString());
-        */
-        
-        // close the exec channel
         channel.disconnect();
     }
     
